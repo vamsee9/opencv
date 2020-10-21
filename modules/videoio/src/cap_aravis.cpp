@@ -59,7 +59,7 @@
 // Please obvserve, that jumbo frames are required when high fps & 16bit data is selected.
 // (camera, switches/routers and the computer this software is running on)
 //
-// Basic usage: VideoCapture cap(CAP_ARAVIS + <camera id>);
+// Basic usage: VideoCapture cap(<camera id>, CAP_ARAVIS);
 //
 // Supported properties:
 //  read/write
@@ -502,7 +502,7 @@ double CvCaptureCAM_Aravis::getProperty( int property_id ) const
             }
             break;
 
-        case CAP_PROP_ARAVIS_AUTOTRIGGER:
+        case cv::CAP_PROP_ARAVIS_AUTOTRIGGER:
         {
             return allowAutoTrigger ? 1. : 0.;
         }
@@ -591,7 +591,7 @@ bool CvCaptureCAM_Aravis::setProperty( int property_id, double value )
             }
             break;
 
-        case CAP_PROP_ARAVIS_AUTOTRIGGER:
+        case cv::CAP_PROP_ARAVIS_AUTOTRIGGER:
             {
                 allowAutoTrigger = (bool) value;
             }

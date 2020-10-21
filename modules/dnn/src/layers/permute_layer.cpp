@@ -184,21 +184,9 @@ public:
         computeStrides(shape(inputs[0]), shape(outputs[0]));
 
 #ifdef HAVE_OPENCL
-        if (uorder.empty())
-        {
-            std::vector<int> orderVec(_order.begin(), _order.end());;
-            Mat morder(1, orderVec.size(), CV_32SC1, &orderVec[0]);
-
-            std::vector<int> oldStrideVec(_oldStride.begin(), _oldStride.end());
-            Mat mold_stride(1, _oldStride.size(), CV_32SC1, &oldStrideVec[0]);
-
-            std::vector<int> newStrideVec(_newStride.begin(), _newStride.end());
-            Mat mnew_stride(1, newStrideVec.size(), CV_32SC1, &newStrideVec[0]);
-
-            morder.copyTo(uorder);
-            mold_stride.copyTo(uold_stride);
-            mnew_stride.copyTo(unew_stride);
-        }
+        uorder.release();
+        uold_stride.release();
+        unew_stride.release();
 #endif
     }
 
@@ -286,6 +274,22 @@ public:
         if (!_needsPermute)
             return false;
 
+        if (uorder.empty())
+        {
+            std::vector<int> orderVec(_order.begin(), _order.end());;
+            Mat morder(1, orderVec.size(), CV_32SC1, &orderVec[0]);
+
+            std::vector<int> oldStrideVec(_oldStride.begin(), _oldStride.end());
+            Mat mold_stride(1, _oldStride.size(), CV_32SC1, &oldStrideVec[0]);
+
+            std::vector<int> newStrideVec(_newStride.begin(), _newStride.end());
+            Mat mnew_stride(1, newStrideVec.size(), CV_32SC1, &newStrideVec[0]);
+
+            morder.copyTo(uorder);
+            mold_stride.copyTo(uold_stride);
+            mnew_stride.copyTo(unew_stride);
+        }
+
         bool use_half = (inps.depth() == CV_16S);
         String opts = format("-DDtype=%s", use_half ? "half" : "float");
         for (size_t i = 0; i < inputs.size(); i++)
@@ -352,7 +356,7 @@ public:
                 CV_Assert(out.dims == numAxes && out.size == outputs[0].size);
 
                 CV_Assert(inp.isContinuous() && out.isContinuous());
-                CV_Assert(inp.type() == CV_32F && out.type() == CV_32F);
+                // CV_Assert(inp.type() == CV_32F && out.type() == CV_32F);
 
                 if( numAxes == 4 )
                 {
@@ -397,8 +401,9 @@ public:
                                         const std::vector<Ptr<BackendNode> >& nodes) CV_OVERRIDE
     {
         auto& ieInpNode = nodes[0].dynamicCast<InfEngineNgraphNode>()->node;
+        std::vector<int64_t> order(_order.begin(), _order.end());
         auto tr_axes = std::make_shared<ngraph::op::Constant>(ngraph::element::i64,
-                       ngraph::Shape({_order.size()}), _order.data());
+                       ngraph::Shape({order.size()}), order.data());
         auto transpose = std::make_shared<ngraph::op::Transpose>(ieInpNode, tr_axes);
         return Ptr<BackendNode>(new InfEngineNgraphNode(transpose));
     }

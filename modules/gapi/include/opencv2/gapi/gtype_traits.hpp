@@ -2,7 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 //
-// Copyright (C) 2018 Intel Corporation
+// Copyright (C) 2018-2020 Intel Corporation
 
 
 #ifndef OPENCV_GAPI_GTYPE_TRAITS_HPP
@@ -15,9 +15,10 @@
 #include <opencv2/gapi/gscalar.hpp>
 #include <opencv2/gapi/garray.hpp>
 #include <opencv2/gapi/gopaque.hpp>
+#include <opencv2/gapi/gframe.hpp>
 #include <opencv2/gapi/streaming/source.hpp>
+#include <opencv2/gapi/media.hpp>
 #include <opencv2/gapi/gcommon.hpp>
-#include <opencv2/gapi/own/convert.hpp>
 
 namespace cv
 {
@@ -36,6 +37,7 @@ namespace detail
         GOBJREF,      // <internal> reference to object
         GMAT,         // a cv::GMat
         GMATP,        // a cv::GMatP
+        GFRAME,       // a cv::GFrame
         GSCALAR,      // a cv::GScalar
         GARRAY,       // a cv::GArrayU  (note - exactly GArrayU,  not GArray<T>!)
         GOPAQUE,      // a cv::GOpaqueU (note - exactly GOpaqueU, not GOpaque<T>!)
@@ -49,26 +51,37 @@ namespace detail
     template<typename T> struct GTypeTraits
     {
         static constexpr const ArgKind kind = ArgKind::OPAQUE_VAL;
+        static constexpr const OpaqueKind op_kind = OpaqueKind::CV_UNKNOWN;
     };
     template<>           struct GTypeTraits<cv::GMat>
     {
         static constexpr const ArgKind kind = ArgKind::GMAT;
         static constexpr const GShape shape = GShape::GMAT;
+        static constexpr const OpaqueKind op_kind = OpaqueKind::CV_UNKNOWN;
     };
     template<>           struct GTypeTraits<cv::GMatP>
     {
         static constexpr const ArgKind kind = ArgKind::GMATP;
         static constexpr const GShape shape = GShape::GMAT;
+        static constexpr const OpaqueKind op_kind = OpaqueKind::CV_UNKNOWN;
+    };
+    template<>           struct GTypeTraits<cv::GFrame>
+    {
+        static constexpr const ArgKind kind = ArgKind::GFRAME;
+        static constexpr const GShape shape = GShape::GFRAME;
+        static constexpr const OpaqueKind op_kind = OpaqueKind::CV_UNKNOWN;
     };
     template<>           struct GTypeTraits<cv::GScalar>
     {
         static constexpr const ArgKind kind = ArgKind::GSCALAR;
         static constexpr const GShape shape = GShape::GSCALAR;
+        static constexpr const OpaqueKind op_kind = OpaqueKind::CV_UNKNOWN;
     };
     template<class T> struct GTypeTraits<cv::GArray<T> >
     {
         static constexpr const ArgKind kind = ArgKind::GARRAY;
         static constexpr const GShape shape = GShape::GARRAY;
+        static constexpr const OpaqueKind op_kind = GOpaqueTraits<T>::kind;
         using host_type  = std::vector<T>;
         using strip_type = cv::detail::VectorRef;
         static cv::detail::GArrayU   wrap_value(const cv::GArray<T>  &t) { return t.strip();}
@@ -79,6 +92,7 @@ namespace detail
     {
         static constexpr const ArgKind kind = ArgKind::GOPAQUE;
         static constexpr const GShape shape = GShape::GOPAQUE;
+        static constexpr const OpaqueKind op_kind = GOpaqueTraits<T>::kind;
         using host_type  = T;
         using strip_type = cv::detail::OpaqueRef;
         static cv::detail::GOpaqueU  wrap_value(const cv::GOpaque<T>  &t) { return t.strip();}
@@ -105,14 +119,14 @@ namespace detail
     // and GMat behavior is correct for GMatP)
     template<typename T> struct GTypeOf;
 #if !defined(GAPI_STANDALONE)
-    template<>           struct GTypeOf<cv::Mat>               { using type = cv::GMat;      };
     template<>           struct GTypeOf<cv::UMat>              { using type = cv::GMat;      };
-    template<>           struct GTypeOf<cv::Scalar>            { using type = cv::GScalar;   };
 #endif // !defined(GAPI_STANDALONE)
-    template<>           struct GTypeOf<cv::gapi::own::Mat>    { using type = cv::GMat;      };
-    template<>           struct GTypeOf<cv::gapi::own::Scalar> { using type = cv::GScalar;   };
+    template<>           struct GTypeOf<cv::Mat>               { using type = cv::GMat;      };
+    template<>           struct GTypeOf<cv::RMat>              { using type = cv::GMat;      };
+    template<>           struct GTypeOf<cv::Scalar>            { using type = cv::GScalar;   };
     template<typename U> struct GTypeOf<std::vector<U> >       { using type = cv::GArray<U>; };
     template<typename U> struct GTypeOf                        { using type = cv::GOpaque<U>;};
+    template<>           struct GTypeOf<cv::MediaFrame>        { using type = cv::GFrame;    };
     // FIXME: This is not quite correct since IStreamSource may produce not only Mat but also Scalar
     // and vector data. TODO: Extend the type dispatching on these types too.
     template<>           struct GTypeOf<cv::gapi::wip::IStreamSource::Ptr> { using type = cv::GMat;};

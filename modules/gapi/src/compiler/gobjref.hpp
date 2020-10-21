@@ -28,7 +28,8 @@ namespace gimpl
 
     using ConstVal = util::variant
     < util::monostate
-    , cv::gapi::own::Scalar
+    , cv::Scalar
+    , cv::detail::VectorRef
     >;
 
     struct RcDesc
